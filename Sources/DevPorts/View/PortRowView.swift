@@ -38,7 +38,7 @@ struct PortRowView: View {
                 actions.opacity(hovering || isPrompting || !row.isRunning ? 1 : 0)
             }
             .padding(.horizontal, Theme.gutter)
-            .padding(.vertical, 6)
+            .frame(height: Theme.rowHeight)
 
             if isPrompting, let prompt = model.stopPrompt {
                 StopConfirmView(prompt: prompt, row: row)

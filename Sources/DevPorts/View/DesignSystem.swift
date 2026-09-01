@@ -3,9 +3,21 @@ import SwiftUI
 
 enum Theme {
     static let panelWidth: CGFloat = 400
-    static let maxListHeight: CGFloat = 460
     static let rowRadius: CGFloat = 7
     static let gutter: CGFloat = 10
+
+    /// Rows are a fixed height so the list can show a whole number of them. Without this
+    /// the viewport would cut the last row in half and read as a rendering glitch.
+    static let rowHeight: CGFloat = 40
+    static let rowSpacing: CGFloat = 1
+    static let visibleRows = 7
+    static let listPadding: CGFloat = 6
+
+    /// Exactly `visibleRows` rows; anything beyond that scrolls.
+    static let maxListHeight: CGFloat =
+        rowHeight * CGFloat(visibleRows)
+        + rowSpacing * CGFloat(visibleRows - 1)
+        + listPadding * 2
 }
 
 enum Symbols {

@@ -19,7 +19,7 @@ struct MenuBarContentView: View {
             }
 
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 1) {
+                LazyVStack(alignment: .leading, spacing: Theme.rowSpacing) {
                     let rows = model.rows(for: model.tab)
                     if rows.isEmpty {
                         emptyState
@@ -32,9 +32,11 @@ struct MenuBarContentView: View {
                 // A favorite appears in both tabs with the same identity; keying the stack
                 // to the tab stops SwiftUI from reusing a row view across the switch.
                 .id(model.tab)
-                .padding(.vertical, 6)
+                .padding(.vertical, Theme.listPadding)
             }
+            // Shrinks to fit when there are fewer than seven rows, scrolls past that.
             .frame(maxHeight: Theme.maxListHeight)
+            .scrollBounceBehavior(.basedOnSize)
 
             Divider()
             footer

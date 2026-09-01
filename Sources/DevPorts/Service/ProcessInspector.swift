@@ -204,18 +204,40 @@ enum ProcessInspector {
 
     // MARK: - Command suggestion
 
-    /// Reads `package.json` so favoriting a Node project offers `pnpm run dev` rather
-    /// than a raw absolute path to a bin shim.
+    private static let preferredScripts = ["dev", "start", "serve", "develop"]
+
+    /// Reads the project's manifest so favoriting offers `pnpm run dev` or
+    /// `php artisan serve` rather than a raw absolute path to a bin shim.
     static func suggestedCommand(in directory: String?) -> String? {
         guard let directory else { return nil }
-        let packageURL = URL(fileURLWithPath: directory).appendingPathComponent("package.json")
-        guard let data = try? Data(contentsOf: packageURL),
+        return nodeCommand(in: directory) ?? phpCommand(in: directory)
+    }
+
+    private static func nodeCommand(in directory: String) -> String? {
+        guard let scripts = scripts(in: directory, manifest: "package.json"),
+              let script = preferredScripts.first(where: { scripts.contains($0) }) else { return nil }
+        return "\(packageManager(in: directory)) run \(script)"
+    }
+
+    private static func phpCommand(in directory: String) -> String? {
+        let base = URL(fileURLWithPath: directory)
+        // Laravel and anything else shipping an artisan console has one obvious answer.
+        if FileManager.default.fileExists(atPath: base.appendingPathComponent("artisan").path) {
+            return "php artisan serve"
+        }
+        guard let scripts = scripts(in: directory, manifest: "composer.json"),
+              let script = preferredScripts.first(where: { scripts.contains($0) }) else { return nil }
+        return "composer run \(script)"
+    }
+
+    /// Script *names* only — composer allows a string or an array of commands as the
+    /// value, and neither shape matters here.
+    private static func scripts(in directory: String, manifest: String) -> Set<String>? {
+        let url = URL(fileURLWithPath: directory).appendingPathComponent(manifest)
+        guard let data = try? Data(contentsOf: url),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let scripts = json["scripts"] as? [String: Any] else { return nil }
-
-        let preferred = ["dev", "start", "serve", "develop"]
-        guard let script = preferred.first(where: { scripts[$0] != nil }) else { return nil }
-        return "\(packageManager(in: directory)) run \(script)"
+        return Set(scripts.keys)
     }
 
     private static func packageManager(in directory: String) -> String {
