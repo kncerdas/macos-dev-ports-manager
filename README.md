@@ -7,7 +7,7 @@ of them owns it. DevPorts lists every listening port, tells you which project it
 and gives you a button for each thing you'd otherwise do by hand.
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="The DevPorts panel listing ten listening ports across node, Python and PHP projects" width="406">
+  <img src="docs/screenshot.png" alt="The DevPorts panel listing ten listening ports across node, Python and PHP projects" width="446">
 </p>
 
 ---
