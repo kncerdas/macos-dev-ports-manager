@@ -6,19 +6,9 @@ Five projects half-open across terminal tabs, `EADDRINUSE` on port 3000, and no 
 of them owns it. DevPorts lists every listening port, tells you which project it belongs to,
 and gives you a button for each thing you'd otherwise do by hand.
 
-```
-┌──────────────────────────────────────────────┐
-│  🔍 Filter by port, name or path      ⟳   ⚙  │
-│  [ Running 2 ]  [ Favorites 3 ]              │
-├──────────────────────────────────────────────┤
-│  ●  3000   AI Coach              ⧉  ↻  ■  ★  │
-│            ~/Dev/AI Coach · node · pid 32429 │
-│  ●  5173   storefront            ⧉  ↻  ■  ★  │
-│            ~/Dev/storefront · node · pid 611 │
-├──────────────────────────────────────────────┤
-│  2 listening · 3 system hidden          Quit │
-└──────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="docs/screenshot.png" alt="The DevPorts panel listing ten listening ports across node, Python and PHP projects" width="406">
+</p>
 
 ---
 

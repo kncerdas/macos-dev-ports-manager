@@ -31,11 +31,17 @@ struct PortRowView: View {
                         .font(.system(size: 10.5))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                        .truncationMode(.head)
+                        // Tail truncation keeps the path — the row's identity — and drops
+                        // the trailing badges first when hovering narrows the column.
+                        .truncationMode(.tail)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer(minLength: 4)
-                actions.opacity(hovering || isPrompting || !row.isRunning ? 1 : 0)
+                // Laid out only when shown. Reserving their width permanently left the
+                // meta line ~170pt and collapsed every path to an ellipsis.
+                if showActions {
+                    actions
+                }
             }
             .padding(.horizontal, Theme.gutter)
             .frame(height: Theme.rowHeight)
@@ -64,6 +70,11 @@ struct PortRowView: View {
         if !row.bindSummary.isEmpty { parts.append(row.bindSummary) }
         if let pid = row.pid { parts.append("pid \(pid)") }
         return parts.filter { !$0.isEmpty }.joined(separator: "  ·  ")
+    }
+
+    /// Stopped favorites always show theirs, so Start stays discoverable without a hover.
+    private var showActions: Bool {
+        hovering || isPrompting || !row.isRunning
     }
 
     // MARK: - Actions

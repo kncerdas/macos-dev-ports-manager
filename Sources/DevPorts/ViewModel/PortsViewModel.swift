@@ -160,7 +160,11 @@ final class PortsViewModel: ObservableObject {
             id: key,
             port: listener.port,
             displayName: alias ?? favorite?.name ?? Self.inferredName(listener: listener),
-            subtitle: listener.directory.map(Paths.abbreviate) ?? listener.rawCommand,
+            subtitle: Self.subtitle(
+                directory: listener.directory,
+                displayName: alias ?? favorite?.name ?? Self.inferredName(listener: listener),
+                fallback: listener.rawCommand
+            ),
             processLabel: listener.processName,
             bindSummary: listener.bindSummary,
             scheme: favorite?.scheme ?? URLScheme.suggested(for: listener.port),
@@ -183,7 +187,11 @@ final class PortsViewModel: ObservableObject {
             id: favorite.key,
             port: favorite.port,
             displayName: store.data.aliases[favorite.key] ?? favorite.name,
-            subtitle: favorite.directory.isEmpty ? favorite.command : Paths.abbreviate(favorite.directory),
+            subtitle: Self.subtitle(
+                directory: favorite.directory,
+                displayName: store.data.aliases[favorite.key] ?? favorite.name,
+                fallback: favorite.command
+            ),
             processLabel: "",
             bindSummary: "",
             scheme: favorite.scheme,
@@ -199,6 +207,17 @@ final class PortsViewModel: ObservableObject {
             hasAlias: store.data.aliases[favorite.key] != nil,
             savedPort: nil
         )
+    }
+
+    /// The row title is usually the project folder's own name, so repeating it in the
+    /// subtitle wastes the width that pushes the pid off the end. When the title already
+    /// says the leaf, show where it lives instead of saying it twice.
+    private static func subtitle(directory: String?, displayName: String, fallback: String) -> String {
+        guard let directory, !directory.isEmpty, directory != "/" else { return fallback }
+        let leaf = (directory as NSString).lastPathComponent
+        guard leaf == displayName else { return Paths.compact(directory) }
+        let parent = (directory as NSString).deletingLastPathComponent
+        return parent.isEmpty ? Paths.compact(directory) : Paths.abbreviate(parent)
     }
 
     /// Project folder name reads better than an absolute bin path, and is what a
