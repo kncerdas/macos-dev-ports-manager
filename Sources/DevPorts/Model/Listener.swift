@@ -19,8 +19,11 @@ struct Listener: Identifiable, Hashable {
     var resolvedCommand: String?
     /// False when the resolved command looks mangled or unsafe to replay verbatim.
     var commandVerified: Bool = false
-    /// Ancestor the command and directory were taken from; also the stop-tree root.
+    /// Ancestor the command and directory were taken from.
     var commandSourcePID: Int32
+    /// Topmost process that should die with this server. Climbs past the command source
+    /// through supervisors and shell wrappers, so it is never below it.
+    var stopRootPID: Int32 = 0
     var isSystem: Bool = false
 
     var id: String { "\(pid)-\(port)" }

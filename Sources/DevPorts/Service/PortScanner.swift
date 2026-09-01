@@ -47,6 +47,7 @@ enum PortScanner {
                 let directory = directories[resolution.sourcePID]
                 let command = ProcessInspector.normalize(command: resolution.command, relativeTo: directory)
                 listener.commandSourcePID = resolution.sourcePID
+                listener.stopRootPID = ProcessInspector.stopRoot(for: socket.pid, in: table)
                 listener.directory = directory
                 listener.resolvedCommand = command.isEmpty ? nil : command
                 listener.commandVerified = ProcessInspector.isReplayable(command)
@@ -96,7 +97,8 @@ enum PortScanner {
                         port: socket.port,
                         bindAddresses: [socket.address],
                         user: user,
-                        commandSourcePID: pid
+                        commandSourcePID: pid,
+                        stopRootPID: pid
                     )
                     order.append(key)
                 }

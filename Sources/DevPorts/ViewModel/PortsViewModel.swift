@@ -169,7 +169,7 @@ final class PortsViewModel: ObservableObject {
             isFavorite: favorite != nil,
             commandVerified: favorite != nil || listener.commandVerified,
             pid: listener.pid,
-            stopRootPID: listener.commandSourcePID,
+            stopRootPID: listener.stopRootPID == 0 ? listener.commandSourcePID : listener.stopRootPID,
             directory: favorite?.directory.isEmpty == false ? favorite?.directory : listener.directory,
             command: command,
             favoriteID: favorite?.id,

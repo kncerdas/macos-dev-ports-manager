@@ -109,6 +109,40 @@ enum ProcessInspector {
         "claude", "docker", "com.docker.backend"
     ]
 
+    private static let shellNames: Set<String> = ["sh", "bash", "zsh", "dash", "fish", "ksh"]
+
+    /// `sh -c "next dev"` is a wrapper worth killing; the interactive `-zsh` you typed
+    /// into is not. The `-c` flag is what separates them.
+    private static func isShellWrapper(_ node: ProcessNode) -> Bool {
+        shellNames.contains(node.executableName) && node.command.contains(" -c")
+    }
+
+    /// The topmost process that should die with this server. Climbs further than
+    /// `resolveCommand`: an `npm run dev` supervisor and its `sh -c` wrapper belong to the
+    /// server even though neither is where the useful command string lives. Stops dead at
+    /// anything interactive, so a terminal or editor is never in the blast radius.
+    static func stopRoot(for pid: Int32, in table: ProcessTable) -> Int32 {
+        guard let start = table[pid] else { return pid }
+
+        var chosen = start
+        var current = start
+        var hops = 0
+        while hops < 8, let parent = table.parent(of: current.pid) {
+            hops += 1
+            if isShellWrapper(parent) {
+                chosen = parent
+                current = parent
+                continue
+            }
+            let name = parent.executableName
+            if boundaryNames.contains(name) { break }
+            guard runtimeNames.contains(name) else { break }
+            chosen = parent
+            current = parent
+        }
+        return chosen.pid
+    }
+
     struct Resolution {
         var sourcePID: Int32
         var command: String
@@ -153,10 +187,16 @@ enum ProcessInspector {
     /// path that already lost a space.
     static func isReplayable(_ command: String) -> Bool {
         guard !command.isEmpty else { return false }
-        if command.contains("(") && command.contains(")") { return false }
-        guard command.contains("/") else { return false }
 
-        for token in command.split(separator: " ") where token.hasPrefix("/") {
+        // `next-server (v16.2.6)` — a runtime's self-description, not an argv.
+        if command.contains("(") && command.contains(")") { return false }
+
+        // A lone word (`postgres`, `rapportd`) is a process name; a path or an argument
+        // list (`node server.js`, `npm run dev`) is something a shell can actually run.
+        let tokens = command.split(separator: " ")
+        guard tokens.count > 1 || command.contains("/") else { return false }
+
+        for token in tokens where token.hasPrefix("/") {
             if !FileManager.default.fileExists(atPath: String(token)) { return false }
         }
         return true

@@ -14,8 +14,11 @@ struct ProcessNode: Identifiable, Hashable {
 
     var id: Int32 { pid }
 
+    /// `ps -o comm=` is not always a path: npm reports `npm run dev`, so the last path
+    /// component still carries arguments. Take the first token of it.
     var executableName: String {
-        (executablePath as NSString).lastPathComponent
+        let base = (executablePath as NSString).lastPathComponent
+        return base.split(separator: " ").first.map(String.init) ?? base
     }
 }
 

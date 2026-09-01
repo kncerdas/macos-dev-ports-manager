@@ -34,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let failure = snapshot.failure { FileHandle.standardError.write(Data("scan failed: \(failure)\n".utf8)) }
         for listener in snapshot.listeners {
             print("""
-            \(listener.isSystem ? "sys " : "dev ")\(listener.port)\t\(listener.processName)\tpid=\(listener.pid) src=\(listener.commandSourcePID) bind=\(listener.bindAddresses.joined(separator: ","))
+            \(listener.isSystem ? "sys " : "dev ")\(listener.port)\t\(listener.processName)\tpid=\(listener.pid) src=\(listener.commandSourcePID) stopRoot=\(listener.stopRootPID) bind=\(listener.bindAddresses.joined(separator: ","))
             \tdir: \(listener.directory ?? "-")
             \tcmd: \(listener.resolvedCommand ?? "-")  [verified: \(listener.commandVerified)]
             """)
