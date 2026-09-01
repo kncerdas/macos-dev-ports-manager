@@ -82,10 +82,39 @@ make run              # build and launch
 Needs Swift 6 and the Xcode command line tools. No third-party dependencies — SwiftUI,
 AppKit, and `lsof`/`ps`.
 
-**First launch:** the app is ad-hoc signed and not notarized, so Gatekeeper will refuse a
-double-click. Right click `DevPorts.app` → **Open** → **Open**. Once only.
-
 There's no Dock icon — DevPorts is an `LSUIElement` agent. Look in the menu bar.
+
+### Disk image
+
+```bash
+make dmg               # -> dist/DevPorts-1.0.dmg
+```
+
+Produces a normal drag-to-install image: `DevPorts.app` beside a shortcut to
+`/Applications`. On the machine that built it, the image carries no quarantine flag, so the
+app opens on a double-click like anything else.
+
+### Gatekeeper, honestly
+
+The default build is **ad-hoc signed** — `spctl` rejects it, and there is no team identity
+behind it. That has no effect locally, but the moment the `.dmg` travels anywhere (AirDrop,
+a download, a USB stick) macOS attaches `com.apple.quarantine` and refuses to open it. On
+macOS 15 and later the old Control-click → Open shortcut no longer bypasses this; the
+recipient has to visit **System Settings → Privacy & Security** and press **Open Anyway**.
+
+To ship something that just opens, sign with a Developer ID and notarize — both are wired
+into the script already, and both need a paid Apple Developer account:
+
+```bash
+# one-time: store an app-specific password in the keychain
+xcrun notarytool store-credentials devports   --apple-id you@example.com --team-id TEAMID --password <app-specific-password>
+
+DEVPORTS_SIGN_ID="Developer ID Application: Your Name (TEAMID)" DEVPORTS_NOTARY_PROFILE=devports make dmg
+```
+
+That signs the app with a hardened runtime, signs the image, submits it to Apple, waits for
+the verdict, and staples the ticket so it opens offline. Without the account, `make install`
+or dragging from a locally built image is the way in.
 
 ---
 

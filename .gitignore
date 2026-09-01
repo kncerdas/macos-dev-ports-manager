@@ -1,6 +1,7 @@
 .build/
 .swiftpm/
 DevPorts.app/
+dist/
 Resources/AppIcon.icns
 *.iconset/
 .DS_Store

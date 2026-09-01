@@ -1,7 +1,10 @@
-.PHONY: app run install clean debug
+.PHONY: app dmg run install clean debug
 
 app:
 	./build.sh
+
+dmg:
+	./Scripts/make-dmg.sh
 
 run: app
 	open ./DevPorts.app
@@ -15,4 +18,4 @@ debug:
 	swift build
 
 clean:
-	rm -rf .build DevPorts.app Resources/AppIcon.icns
+	rm -rf .build DevPorts.app dist Resources/AppIcon.icns
