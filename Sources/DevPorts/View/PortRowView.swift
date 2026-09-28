@@ -68,7 +68,12 @@ struct PortRowView: View {
         if let savedPort = row.savedPort { parts.append("saved :\(savedPort)") }
         if !row.processLabel.isEmpty { parts.append(row.processLabel) }
         if !row.bindSummary.isEmpty { parts.append(row.bindSummary) }
-        if let pid = row.pid { parts.append("pid \(pid)") }
+        // Every container shares the forwarder's pid, so it identifies nothing.
+        if row.container != nil {
+            parts.append("docker")
+        } else if let pid = row.pid {
+            parts.append("pid \(pid)")
+        }
         return parts.filter { !$0.isEmpty }.joined(separator: "  ·  ")
     }
 
@@ -132,7 +137,11 @@ struct PortRowView: View {
         }
         if row.isRunning {
             Button("Open in Browser") { model.openInBrowser(row) }
-            Button("Copy PID") { model.copyPID(row) }
+            if row.container != nil {
+                Button("Copy Container Name") { model.copyContainerName(row) }
+            } else {
+                Button("Copy PID") { model.copyPID(row) }
+            }
         }
         if let directory = row.directory, !directory.isEmpty {
             Button("Reveal in Finder") { model.revealInFinder(row) }

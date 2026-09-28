@@ -25,6 +25,9 @@ struct PortRow: Identifiable, Hashable {
     /// Set only when a favorite is running on a port other than the one it was saved
     /// with — i.e. the command ignored `$PORT`.
     var savedPort: Int?
+    /// Set when the port is published by a Docker container; stop and restart go through
+    /// the Docker CLI, because `pid` is Docker's shared forwarder.
+    var container: DockerContainer?
 
     var canOpenInBrowser: Bool { isRunning }
     var url: URL? { URL(string: "\(scheme)://localhost:\(port)") }
@@ -75,4 +78,5 @@ struct StopPrompt: Identifiable, Equatable {
     var port: Int
     var listeningPID: Int32
     var tree: [Entry]
+    var container: DockerContainer?
 }

@@ -25,6 +25,8 @@ struct Listener: Identifiable, Hashable {
     /// through supervisors and shell wrappers, so it is never below it.
     var stopRootPID: Int32 = 0
     var isSystem: Bool = false
+    /// Set when `pid` is only Docker's port forwarder and this container is the real server.
+    var container: DockerContainer?
 
     var id: String { "\(pid)-\(port)" }
 

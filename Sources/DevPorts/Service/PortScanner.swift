@@ -36,6 +36,11 @@ enum PortScanner {
         }
         let directories = ProcessInspector.workingDirectories(for: Array(Set(resolutions.values.map(\.sourcePID))))
 
+        // Only pay for a `docker ps` when a forwarder actually holds a port.
+        let containers = sockets.contains { DockerInspector.isForwarder(table[$0.pid]) }
+            ? DockerInspector.containersByHostPort()
+            : [:]
+
         snapshot.listeners = sockets.map { socket in
             var listener = socket
             let node = table[socket.pid]
@@ -51,6 +56,15 @@ enum PortScanner {
                 listener.directory = directory
                 listener.resolvedCommand = command.isEmpty ? nil : command
                 listener.commandVerified = ProcessInspector.isReplayable(command)
+            }
+
+            // The forwarder's own cwd and argv say nothing about the container; the
+            // compose project directory and `docker start` are what identify and revive it.
+            if DockerInspector.isForwarder(node), let container = containers[socket.port] {
+                listener.container = container
+                listener.directory = container.workingDirectory
+                listener.resolvedCommand = "docker start \(container.name)"
+                listener.commandVerified = true
             }
             return listener
         }

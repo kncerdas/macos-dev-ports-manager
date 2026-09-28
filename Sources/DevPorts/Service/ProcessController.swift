@@ -76,7 +76,8 @@ enum ProcessController {
             }.value
             if listeners.contains(where: { $0.port == port }) { return port }
             if !directory.isEmpty,
-               let elsewhere = listeners.first(where: { $0.directory == directory }) {
+               // Compose services share a directory, so a sibling container is not this server.
+               let elsewhere = listeners.first(where: { $0.directory == directory && $0.container == nil }) {
                 return elsewhere.port
             }
         }

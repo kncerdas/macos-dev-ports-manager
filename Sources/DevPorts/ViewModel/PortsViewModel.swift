@@ -163,9 +163,9 @@ final class PortsViewModel: ObservableObject {
             subtitle: Self.subtitle(
                 directory: listener.directory,
                 displayName: alias ?? favorite?.name ?? Self.inferredName(listener: listener),
-                fallback: listener.rawCommand
+                fallback: listener.container.map { $0.project ?? "docker" } ?? listener.rawCommand
             ),
-            processLabel: listener.processName,
+            processLabel: listener.container?.shortImage ?? listener.processName,
             bindSummary: listener.bindSummary,
             scheme: favorite?.scheme ?? URLScheme.suggested(for: listener.port),
             isRunning: true,
@@ -178,7 +178,8 @@ final class PortsViewModel: ObservableObject {
             command: command,
             favoriteID: favorite?.id,
             hasAlias: alias != nil,
-            savedPort: (favorite.map { $0.port != listener.port } ?? false) ? favorite?.port : nil
+            savedPort: (favorite.map { $0.port != listener.port } ?? false) ? favorite?.port : nil,
+            container: listener.container
         )
     }
 
@@ -223,6 +224,7 @@ final class PortsViewModel: ObservableObject {
     /// Project folder name reads better than an absolute bin path, and is what a
     /// developer actually calls the thing.
     private static func inferredName(listener: Listener) -> String {
+        if let container = listener.container { return container.displayName }
         if let directory = listener.directory, !directory.isEmpty, directory != "/" {
             return (directory as NSString).lastPathComponent
         }
@@ -357,6 +359,13 @@ final class PortsViewModel: ObservableObject {
     func requestStop(_ row: PortRow) {
         guard let pid = row.pid else { return }
 
+        // The pid is Docker's forwarder for every published port; its process tree is
+        // the whole Docker backend, so a container only ever offers `docker stop`.
+        if let container = row.container {
+            stopPrompt = StopPrompt(rowKey: row.id, port: row.port, listeningPID: pid, tree: [], container: container)
+            return
+        }
+
         if let favoriteID = row.favoriteID,
            let remembered = store.data.favorites.first(where: { $0.id == favoriteID })?.stopMode {
             perform(stop: row, mode: remembered, remember: false)
@@ -392,6 +401,11 @@ final class PortsViewModel: ObservableObject {
                 guard let index = data.favorites.firstIndex(where: { $0.id == favoriteID }) else { return }
                 data.favorites[index].stopMode = mode
             }
+        }
+
+        if let container = row.container {
+            runDocker(on: row, verb: "stop") { DockerInspector.stop(container) }
+            return
         }
 
         let pids = self.pids(for: row, mode: mode)
@@ -453,6 +467,10 @@ final class PortsViewModel: ObservableObject {
     }
 
     func restart(_ row: PortRow) {
+        if let container = row.container {
+            runDocker(on: row, verb: "restart") { DockerInspector.restart(container) }
+            return
+        }
         guard let favorite = favorite(for: row) else {
             show(Banner(text: "Save this port as a favorite first so DevPorts knows how to restart it.", kind: .error))
             return
@@ -481,6 +499,19 @@ final class PortsViewModel: ObservableObject {
             } catch {
                 busyRows.remove(row.id)
                 show(Banner(text: "Couldn't restart: \(error.localizedDescription)", kind: .error))
+            }
+            refresh(showSpinner: false)
+        }
+    }
+
+    private func runDocker(on row: PortRow, verb: String, _ action: @escaping @Sendable () -> CommandResult) {
+        busyRows.insert(row.id)
+        Task {
+            let result = await Task.detached(priority: .userInitiated) { action() }.value
+            busyRows.remove(row.id)
+            if !result.succeeded {
+                let message = result.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+                show(Banner(text: "Couldn't \(verb) “\(row.displayName)”: \(message)", kind: .error))
             }
             refresh(showSpinner: false)
         }
@@ -517,6 +548,13 @@ final class PortsViewModel: ObservableObject {
     }
 
     // MARK: - Row extras
+
+    func copyContainerName(_ row: PortRow) {
+        guard let container = row.container else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(container.name, forType: .string)
+        show(Banner(text: "Copied \(container.name)", kind: .info))
+    }
 
     func copyPID(_ row: PortRow) {
         guard let pid = row.pid else { return }

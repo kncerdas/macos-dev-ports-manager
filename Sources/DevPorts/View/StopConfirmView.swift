@@ -12,6 +12,38 @@ struct StopConfirmView: View {
     private var treeCount: Int { prompt.tree.count }
 
     var body: some View {
+        if let container = prompt.container {
+            containerBody(container)
+        } else {
+            processBody
+        }
+    }
+
+    private func containerBody(_ container: DockerContainer) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("Stop container “\(container.name)”?")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            HStack(spacing: 6) {
+                Button("Stop Container") {
+                    model.perform(stop: row, mode: .process, remember: false)
+                }
+                .controlSize(.small)
+                .buttonStyle(.borderedProminent)
+
+                Button("Cancel") { model.stopPrompt = nil }
+                    .controlSize(.small)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .font(.system(size: 11))
+            }
+        }
+    }
+
+    private var processBody: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text(treeCount > 1 ? "Stop just the listener, or the whole tree?" : "Stop this process?")
                 .font(.system(size: 11, weight: .medium))
