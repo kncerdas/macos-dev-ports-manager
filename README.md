@@ -1,148 +1,179 @@
-# DevPorts
+<p align="center">
+  <img src="docs/icon.png" alt="DevPorts app icon" width="128" height="128">
+</p>
 
-A macOS menu bar app for the ports you forgot you left running.
+<h1 align="center">DevPorts</h1>
 
-Five projects half-open across terminal tabs, `EADDRINUSE` on port 3000, and no idea which
-of them owns it. DevPorts lists every listening port, tells you which project it belongs to,
-and gives you a button for each thing you'd otherwise do by hand.
+<p align="center">
+  <strong>A macOS menu bar app for the ports you forgot you left running.</strong>
+</p>
+
+<p align="center">
+  <img alt="macOS 15+" src="https://img.shields.io/badge/macOS-15%2B-000000?logo=apple&logoColor=white">
+  <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
+  <img alt="SwiftUI" src="https://img.shields.io/badge/UI-SwiftUI-0A84FF">
+  <img alt="No dependencies" src="https://img.shields.io/badge/dependencies-none-2ea44f">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"></a>
+</p>
 
 <p align="center">
   <img src="docs/screenshot.png" alt="The DevPorts panel listing ten listening ports across node, Python and PHP projects" width="446">
 </p>
 
----
-
-## What it does
-
-**Lists what's listening.** Every TCP port in LISTEN state, refreshed while the panel is
-open. System daemons (ControlCenter, rapportd, and friends) are hidden behind a toggle, so
-the list is your projects and nothing else.
-
-**Names things the way you do.** A row is called `AI Coach`, not
-`/Users/you/Dev/AI Coach/node_modules/.bin/next`. Names come from the project directory,
-and you can rename anything — names key off directory + port, so they survive restarts and
-new PIDs.
-
-**Recovers the real start command.** This is the part that took the work. Node rewrites its
-process title, so the thing on port 3000 reports itself as `next-server (v16.2.6)` — useless
-for restarting. DevPorts walks up the process tree to the topmost runtime ancestor, which
-still carries `next dev --turbopack`, then rewrites absolute paths relative to the project
-directory so a path containing a space doesn't re-split when replayed. When it still can't
-produce something trustworthy, it says so and asks you instead of guessing.
-
-**Stops things, showing its work first.** Stop expands inline and lists the exact PIDs it's
-about to signal, then offers **Stop Process** or **Stop Tree** — because killing the
-listening PID usually leaves the `npm run dev` wrapper alive. SIGTERM first, SIGKILL after a
-3 second grace. Tick *Remember* and a favorite stops skipping the prompt.
-
-**Starts things back up.** Favorite a port and DevPorts saves its command and directory.
-Node projects are pre-filled from `package.json` and the lockfile present — `pnpm run dev`,
-`npm run start`, whichever fits. Started servers are fully detached: quit DevPorts and they
-keep running.
-
-**Restart** = stop, wait for the port to actually clear, start again.
-
-**Opens in a browser** with a per-entry `http`/`https` choice.
+You have five projects open across terminal tabs. Something says `EADDRINUSE` on port 3000,
+and you can't tell which project owns it. DevPorts lists every listening port, shows which
+project each one belongs to, and gives you a button for each fix you'd otherwise do by hand
+in the terminal.
 
 ---
 
-## The port field, and what it can't do
+## Features
 
-A favorite's port is exported to the command as `PORT` — the convention Next, CRA, Express,
-Rails and most dev servers read. But a command with its port hard-coded in config
-(`server.port` in `vite.config.js`, an explicit `next dev -p 3000`) overrides the
-environment, and no amount of wishing changes that.
-
-So DevPorts watches where the server *actually* lands. If it comes up somewhere else, you
-get told:
-
-> "storefront ignored $PORT and started on 5173 instead of 4000."
-
-The row keeps showing `saved :4000` next to the live port, and the `⋯` menu offers **Save
-Port 5173** to adopt reality. The server is still matched to its favorite by working
-directory, so it never splits into two rows.
+| | |
+| --- | --- |
+| 🔌 **See what's listening** | Every TCP port in `LISTEN`, refreshed live while the panel is open. Filter by port, name or path. |
+| 🏷️ **Real names** | A row says `AI Coach`, not `/Users/you/Dev/AI Coach/node_modules/.bin/next`. Rename anything; names survive restarts and new PIDs. |
+| ⏹️ **Stop safely** | Before anything is killed, Stop lists the exact PIDs it will signal. Choose **Stop Process** or **Stop Tree**, which also ends the `npm run dev` wrapper left behind. |
+| ▶️ **Start & restart** | Star a port to save its command and folder. Start it again later, even after a reboot. Restart waits for the port to clear before starting again. |
+| 🐳 **Docker aware** | Published container ports show the container, not Docker's shared forwarder, and stop and restart through `docker`. |
+| 🙈 **Hide the noise** | System daemons are hidden by default. Hide any other process from its `⋯` menu, and show or hide them all from the footer in one click. |
+| 🌐 **Open in browser** | One click to `http://localhost:<port>`, with an `http`/`https` choice per entry. |
+| 🪶 **Lightweight** | Native SwiftUI + AppKit, no third-party dependencies, no Dock icon. It lives in the menu bar. |
 
 ---
 
 ## Install
 
-```bash
-git clone <this repo>
-cd Mac-DevPorts
-make install          # builds and copies to /Applications
-```
-
-Or build in place:
+### From source
 
 ```bash
-./build.sh            # produces ./DevPorts.app
-make run              # build and launch
+git clone https://github.com/kncerdas/macos-dev-ports-manager.git
+cd macos-dev-ports-manager
+make install          # builds and copies DevPorts.app to /Applications
 ```
 
-Needs Swift 6 and the Xcode command line tools. No third-party dependencies — SwiftUI,
-AppKit, and `lsof`/`ps`.
+Requires macOS 15 or later and Swift 6 (Xcode or the command line tools).
 
-There's no Dock icon — DevPorts is an `LSUIElement` agent. Look in the menu bar.
-
-### Disk image
+Other targets:
 
 ```bash
-make dmg               # -> dist/DevPorts-1.0.dmg
+make run              # build ./DevPorts.app and launch it
+make dmg              # build a disk image in dist/
+swift run DevPorts    # run straight from SwiftPM while hacking
 ```
 
-Produces a normal drag-to-install image: `DevPorts.app` beside a shortcut to
-`/Applications`. On the machine that built it, the image carries no quarantine flag, so the
-app opens on a double-click like anything else.
+### From a disk image
 
-### Gatekeeper, honestly
+Open `DevPorts-<version>.dmg` and either:
 
-The default build is **ad-hoc signed** — `spctl` rejects it, and there is no team identity
-behind it. That has no effect locally, but the moment the `.dmg` travels anywhere (AirDrop,
-a download, a USB stick) macOS attaches `com.apple.quarantine` and refuses to open it. On
-macOS 15 and later the old Control-click → Open shortcut no longer bypasses this; the
-recipient has to visit **System Settings → Privacy & Security** and press **Open Anyway**.
-
-To ship something that just opens, sign with a Developer ID and notarize — both are wired
-into the script already, and both need a paid Apple Developer account:
-
-```bash
-# one-time: store an app-specific password in the keychain
-xcrun notarytool store-credentials devports   --apple-id you@example.com --team-id TEAMID --password <app-specific-password>
-
-DEVPORTS_SIGN_ID="Developer ID Application: Your Name (TEAMID)" DEVPORTS_NOTARY_PROFILE=devports make dmg
-```
-
-That signs the app with a hardened runtime, signs the image, submits it to Apple, waits for
-the verdict, and staples the ticket so it opens offline. Without the account, `make install`
-or dragging from a locally built image is the way in.
+- **Double-click DevPorts.** It offers to install itself into `/Applications`, or to
+  **update** the copy already there. It quits the running version, swaps in the new one and
+  relaunches it. You never have to delete the old app first, and your favorites and settings
+  carry over.
+- **Drag it onto the Applications shortcut**, the classic way.
 
 ---
 
-## Why it isn't sandboxed
+## Using it
 
-The app shells out to `lsof` and `ps`, sends signals to processes it doesn't own, and spawns
-login shells in arbitrary directories. None of that is possible inside the App Sandbox. It
-is a local developer tool, and it is unsandboxed by necessity rather than by shortcut.
+- **Click the plug in the menu bar** to open the panel. **Running** lists everything
+  listening. **Favorites** lists servers you've saved, whether running or not.
+- **Hover a row** to show its actions: open, restart, stop, star, and the `⋯` menu with
+  rename, copy PID, reveal in Finder, view log and hide.
+- **Star a running server** to save it. DevPorts fills in the start command for you; for Node
+  projects it reads `package.json` and the lockfile (`pnpm run dev`, `npm run start`, …).
+  Check it, save it, and the server can be started from the panel later.
+- **Hidden processes**: the footer shows how many are hidden (`· 4 hidden`). Click to show
+  them, and click `· hide 4` to hide them again. The `⋯` menu can un-hide a single process.
+
+Servers DevPorts starts run fully detached, so quitting DevPorts leaves them running. Their
+output goes to a per-favorite log you can open from the row.
+
+---
+
+## How it works
+
+### Recovering the real start command
+
+This was the hard part. Node rewrites its process title, so the server on port 3000 reports
+itself as `next-server (v16.2.6)`, which is no use for restarting it. DevPorts walks up the
+process tree to the topmost runtime ancestor, which still carries `next dev --turbopack`. It
+then rewrites absolute paths relative to the project directory, so a path containing a space
+doesn't split apart when the command is replayed. When it still can't produce something
+trustworthy, it asks you to check the command instead of guessing.
+
+### The port a server actually binds
+
+A favorite's port is exported to its command as `PORT`, the convention Next, CRA, Express,
+Rails and most dev servers read. A port hard-coded in config (`server.port` in
+`vite.config.js`, `next dev -p 3000`) still wins, so DevPorts watches where the server
+*actually* lands and tells you:
+
+> "storefront ignored $PORT and started on 5173 instead of 4000."
+
+The row shows `saved :4000` next to the live port, and the `⋯` menu offers **Save Port
+5173** to make that the saved port. The server is matched to its favorite by working directory,
+so it never splits into two rows.
+
+### Stopping
+
+DevPorts sends SIGTERM first, then SIGKILL after a 3-second grace period. Tick *Remember* and
+that favorite skips the prompt next time.
+
+---
+
+## Privacy & permissions
+
+DevPorts is a local developer tool. It makes no network requests and collects no telemetry.
+
+It isn't sandboxed. It needs to run `lsof` and `ps`, send signals to your processes and
+start login shells in your project folders, and the App Sandbox allows none of that.
 
 Everything it stores lives in `~/Library/Application Support/DevPorts/`:
 
 | Path | Contents |
 | --- | --- |
-| `store.json` | favorites, renames, settings |
+| `store.json` | favorites, renames, hidden processes, settings |
 | `logs/<favorite-id>.log` | output of servers DevPorts started |
 
-Delete the folder to reset the app completely.
+Delete that folder to reset the app completely.
 
 ---
 
-## Debugging
+## Signing & Gatekeeper
+
+The default build is **ad-hoc signed**. That doesn't matter on the machine that built it.
+Once a `.dmg` travels anywhere (download, AirDrop, USB stick), macOS quarantines it. On
+macOS 15+ the recipient then has to open **System Settings → Privacy & Security** and click
+**Open Anyway**.
+
+To ship a build that opens normally, sign it with a Developer ID and notarize it. Both are
+already wired into the script; both need a paid Apple Developer account:
+
+```bash
+# one-time: store an app-specific password in the keychain
+xcrun notarytool store-credentials devports \
+  --apple-id you@example.com --team-id TEAMID --password <app-specific-password>
+
+DEVPORTS_SIGN_ID="Developer ID Application: Your Name (TEAMID)" \
+DEVPORTS_NOTARY_PROFILE=devports make dmg
+```
+
+That signs the app with the hardened runtime, signs the image, waits for Apple's verdict and
+staples the ticket so it opens offline.
+
+---
+
+## Development
+
+### Debugging the scanner
 
 ```bash
 swift run DevPorts --scan
 ```
 
-Dumps what the scanner sees without opening the UI — port, PID, which ancestor the command
-was recovered from, resolved directory, and whether the command is considered replayable:
+Prints what the scanner sees without opening the UI: port, PID, which ancestor the command
+was recovered from, the resolved directory, and whether the command is safe to replay:
 
 ```
 dev 3000	node	pid=58650 src=58649 bind=*
@@ -150,43 +181,43 @@ dev 3000	node	pid=58650 src=58649 bind=*
 	cmd: node node_modules/.bin/next dev --turbopack  [verified: true]
 ```
 
-Compare against `lsof -nP -iTCP -sTCP:LISTEN` when something looks wrong.
+Compare against `lsof -nP -iTCP -sTCP:LISTEN` when something looks off.
 
----
-
-## How it's built
+### Project layout
 
 | File | Job |
 | --- | --- |
-| `Service/PortScanner.swift` | parses `lsof -F` field output, collapses IPv4/IPv6 duplicates |
+| `Service/PortScanner.swift` | parses `lsof -F` output, collapses IPv4/IPv6 duplicates |
 | `Service/ProcessInspector.swift` | process table, ancestor walk, cwd, system classification, `package.json` suggestions |
 | `Service/ProcessController.swift` | SIGTERM→SIGKILL escalation, detached launch, port polling |
-| `Service/Store.swift` | debounced atomic JSON persistence |
+| `Service/DockerInspector.swift` | maps published ports to containers, `docker stop`/`restart` |
+| `Service/SelfInstaller.swift` | install-or-update when launched from the disk image |
+| `Service/Store.swift` | debounced, atomic JSON persistence |
 | `ViewModel/PortsViewModel.swift` | scan → row merge, favorites, every action |
 | `View/` | menu bar panel, rows, inline stop confirmation, editor window |
 
-A few decisions worth knowing if you go reading:
+Some design decisions, if you're reading the code:
 
-- **Two `ps` calls, not one.** Each asks for a single space-containing field (`comm`, then
-  `command`) in trailing position, which keeps parsing unambiguous for executables under
-  paths with spaces.
+- **Two `ps` calls, not one.** Each requests a single space-containing field (`comm`, then
+  `command`) in trailing position, which keeps parsing unambiguous for paths with spaces.
 - **One batched `lsof` for working directories.** `-p` takes a comma list, so enriching
   twenty listeners is still one process spawn.
 - **Editing happens in a real window, not a sheet.** A sheet attached to a menu bar panel
   dismisses the panel the moment focus moves.
-- **Stop confirmation is inline, not a popover,** for the same reason.
+- **Stop confirmation is inline, not a popover**, for the same reason.
 
 ---
 
 ## Limits
 
-- `lsof` without root only reports **your own** processes. Ports held by root daemons show up
-  only with *Show system processes* on, and can't be stopped from the app — you'll get a
-  clear message rather than silence.
-- Restarting a process you haven't favorited uses the derived command. Where DevPorts can't
-  derive a trustworthy one, it opens the editor pre-filled instead of firing blind.
-- Ad-hoc signed, not notarized. Distributing it to other machines means signing it properly.
+- Without root, `lsof` only reports **your own** processes. Ports held by root daemons show up
+  only with *Show hidden processes* on, and can't be stopped from the app. If you try, the
+  app tells you why it can't.
+- Start and restart need a saved favorite, because that's where the command lives. Stop
+  works on anything you own. Docker containers can be restarted without a favorite.
+
+---
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+[MIT](LICENSE) © 2026 nullkyu
