@@ -146,6 +146,16 @@ struct PortRowView: View {
         if let directory = row.directory, !directory.isEmpty {
             Button("Reveal in Finder") { model.revealInFinder(row) }
         }
+        // Favorites are already the ones worth seeing, and system processes are hidden
+        // by default, so only ordinary running processes can be hidden.
+        if row.isRunning, !row.isFavorite, !row.isSystem {
+            Divider()
+            if row.isHidden {
+                Button("Unhide") { model.unhide(row) }
+            } else {
+                Button("Hide") { model.hide(row) }
+            }
+        }
         if row.isFavorite {
             Button("View Log") { model.openLog(row) }
             Divider()

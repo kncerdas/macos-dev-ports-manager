@@ -15,6 +15,8 @@ struct PortRow: Identifiable, Hashable {
     let isSystem: Bool
     let isFavorite: Bool
     let commandVerified: Bool
+    /// Hidden by the user from the ⋯ menu; only listed while hidden processes are shown.
+    var isHidden = false
 
     let pid: Int32?
     let stopRootPID: Int32?

@@ -4,6 +4,9 @@ struct MenuBarContentView: View {
     @EnvironmentObject private var model: PortsViewModel
     @Environment(\.openWindow) private var openWindow
 
+    /// Natural height of the list content, measured rather than left to the ScrollView.
+    @State private var listHeight: CGFloat = 0
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -19,7 +22,9 @@ struct MenuBarContentView: View {
             }
 
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: Theme.rowSpacing) {
+                // Eager: a lazy stack in a zero-height viewport never materialises its
+                // rows, so there would be nothing to measure.
+                VStack(alignment: .leading, spacing: Theme.rowSpacing) {
                     let rows = model.rows(for: model.tab)
                     if rows.isEmpty {
                         emptyState
@@ -33,9 +38,12 @@ struct MenuBarContentView: View {
                 // to the tab stops SwiftUI from reusing a row view across the switch.
                 .id(model.tab)
                 .padding(.vertical, Theme.listPadding)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { listHeight = $0 }
             }
-            // Shrinks to fit when there are fewer than seven rows, scrolls past that.
-            .frame(maxHeight: Theme.maxListHeight)
+            // Shrinks to fit when there are fewer than seven rows, scrolls past that. An
+            // explicit height, not just a max: a ScrollView's minimum height is zero, and
+            // from macOS 27 the MenuBarExtra window sizes to its content's minimum.
+            .frame(height: min(listHeight, Theme.maxListHeight))
             .scrollBounceBehavior(.basedOnSize)
 
             Divider()
@@ -84,7 +92,7 @@ struct MenuBarContentView: View {
                 .opacity(model.isRefreshing ? 0.4 : 1)
 
             Menu {
-                Toggle("Show system processes", isOn: $model.showSystem)
+                Toggle("Show hidden processes", isOn: $model.showSystem)
                 Divider()
                 Button("Open Data Folder") {
                     NSWorkspace.shared.open(Paths.supportDirectory)
@@ -130,16 +138,18 @@ struct MenuBarContentView: View {
                 .font(.system(size: 10.5))
                 .foregroundStyle(.secondary)
 
-            if model.hiddenSystemCount > 0 {
+            // Toggles both ways: once shown, the same spot offers to hide them again.
+            if model.hideableCount > 0 {
                 Button {
-                    model.showSystem = true
+                    model.showSystem.toggle()
                 } label: {
-                    Text("· " + String(model.hiddenSystemCount) + " system hidden")
+                    Text("· " + (model.showSystem ? "hide " : "") + String(model.hideableCount)
+                        + (model.showSystem ? "" : " hidden"))
                         .font(.system(size: 10.5))
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
-                .help("Show system processes")
+                .help(model.showSystem ? "Hide system and hidden processes again" : "Show system and hidden processes")
             }
 
             Spacer()
@@ -194,8 +204,8 @@ struct MenuBarContentView: View {
         if model.tab == .favorites {
             return "Star a running port to save its command"
         }
-        return model.hiddenSystemCount > 0
-            ? String(model.hiddenSystemCount) + " system processes are hidden"
+        return model.hideableCount > 0 && !model.showSystem
+            ? String(model.hideableCount) + " processes are hidden"
             : "Start a dev server and it shows up here"
     }
 }

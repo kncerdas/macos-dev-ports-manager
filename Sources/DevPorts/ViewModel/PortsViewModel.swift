@@ -21,7 +21,9 @@ final class PortsViewModel: ObservableObject {
     /// Every favorite, running or not — a Favorites tab that hid the running ones would
     /// be a list with holes in it.
     @Published private(set) var favoriteRows: [PortRow] = []
-    @Published private(set) var hiddenSystemCount = 0
+    /// System processes plus the ones hidden from a row's ⋯ menu, counted whether or not
+    /// they are currently shown, so the footer can offer to hide them again.
+    @Published private(set) var hideableCount = 0
     @Published private(set) var isRefreshing = false
     @Published private(set) var busyRows: Set<String> = []
     @Published private(set) var lastScanFailure: String?
@@ -86,7 +88,6 @@ final class PortsViewModel: ObservableObject {
 
     private func rebuild() {
         let visibleListeners = listeners.filter { showSystem || !$0.isSystem }
-        hiddenSystemCount = showSystem ? 0 : listeners.count - visibleListeners.count
 
         var claimedFavorites: Set<UUID> = []
         var pairs: [(listener: Listener, favorite: Favorite?)] = []
@@ -113,12 +114,15 @@ final class PortsViewModel: ObservableObject {
         }
 
         let running = pairs.map { row(for: $0.listener, favorite: $0.favorite) }
+        // Filtered after pairing, so a hidden process never makes a favorite look stopped.
+        let shownRunning = running.filter { showSystem || !$0.isHidden }
+        hideableCount = listeners.filter(\.isSystem).count + running.filter(\.isHidden).count
 
         let stopped = store.data.favorites
             .filter { !claimedFavorites.contains($0.id) }
             .map(row(forStopped:))
 
-        runningRows = filter(running).sorted { $0.port < $1.port }
+        runningRows = filter(shownRunning).sorted { $0.port < $1.port }
         favoriteRows = filter(running.filter(\.isFavorite) + stopped)
             .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
     }
@@ -172,6 +176,7 @@ final class PortsViewModel: ObservableObject {
             isSystem: listener.isSystem,
             isFavorite: favorite != nil,
             commandVerified: favorite != nil || listener.commandVerified,
+            isHidden: favorite == nil && store.data.hiddenKeys.contains(key),
             pid: listener.pid,
             stopRootPID: listener.stopRootPID == 0 ? listener.commandSourcePID : listener.stopRootPID,
             directory: favorite?.directory.isEmpty == false ? favorite?.directory : listener.directory,
@@ -545,6 +550,19 @@ final class PortsViewModel: ObservableObject {
     private func favorite(for row: PortRow) -> Favorite? {
         guard let favoriteID = row.favoriteID else { return nil }
         return store.data.favorites.first { $0.id == favoriteID }
+    }
+
+    // MARK: - Hiding
+
+    func hide(_ row: PortRow) {
+        store.mutate { $0.hiddenKeys.insert(row.id) }
+        rebuild()
+        show(Banner(text: "Hid “\(row.displayName)” — turn on Show hidden processes to see it", kind: .info))
+    }
+
+    func unhide(_ row: PortRow) {
+        store.mutate { $0.hiddenKeys.remove(row.id) }
+        rebuild()
     }
 
     // MARK: - Row extras
