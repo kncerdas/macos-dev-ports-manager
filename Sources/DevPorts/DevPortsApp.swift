@@ -45,5 +45,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Redundant with LSUIElement in the bundle, but keeps `swift run` out of the Dock too.
         NSApp.setActivationPolicy(.accessory)
+        SelfInstaller.offerInstallIfNeeded()
     }
 }

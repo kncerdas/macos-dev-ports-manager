@@ -3,7 +3,7 @@
 app:
 	./build.sh
 
-dmg:
+dmg: app
 	./Scripts/make-dmg.sh
 
 run: app
