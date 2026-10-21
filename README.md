@@ -17,6 +17,14 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/kncerdas/macos-dev-ports-manager/releases/latest/download/DevPorts.dmg">
+    <img alt="Download DevPorts for macOS" src="https://img.shields.io/badge/Download-DevPorts.dmg-2ea44f?style=for-the-badge&logo=apple&logoColor=white">
+  </a>
+  <br>
+  <sub>macOS 15 or later · <a href="https://github.com/kncerdas/macos-dev-ports-manager/releases">All releases</a></sub>
+</p>
+
+<p align="center">
   <img src="docs/screenshot.png" alt="The DevPorts panel listing ten listening ports across node, Python and PHP projects" width="446">
 </p>
 
@@ -44,6 +52,24 @@ in the terminal.
 
 ## Install
 
+### Download
+
+1. Download **[DevPorts.dmg](https://github.com/kncerdas/macos-dev-ports-manager/releases/latest/download/DevPorts.dmg)**
+   (always the latest release).
+2. Open it and double-click **DevPorts**. It offers to install itself into `/Applications`.
+   You can also drag it onto the Applications shortcut.
+3. **First launch only:** the build isn't notarized yet, so macOS blocks it the first time.
+   Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**
+   next to the DevPorts message. After that it opens normally.
+
+Look for the plug icon in the menu bar. DevPorts has no Dock icon.
+
+### Updating
+
+Download the new `DevPorts.dmg`, open it and double-click **DevPorts**. It quits the running
+version, replaces the copy in `/Applications` and relaunches. You never have to delete the
+old app first, and your favorites and settings carry over.
+
 ### From source
 
 ```bash
@@ -61,16 +87,6 @@ make run              # build ./DevPorts.app and launch it
 make dmg              # build a disk image in dist/
 swift run DevPorts    # run straight from SwiftPM while hacking
 ```
-
-### From a disk image
-
-Open `DevPorts-<version>.dmg` and either:
-
-- **Double-click DevPorts.** It offers to install itself into `/Applications`, or to
-  **update** the copy already there. It quits the running version, swaps in the new one and
-  relaunches it. You never have to delete the old app first, and your favorites and settings
-  carry over.
-- **Drag it onto the Applications shortcut**, the classic way.
 
 ---
 
@@ -142,10 +158,9 @@ Delete that folder to reset the app completely.
 
 ## Signing & Gatekeeper
 
-The default build is **ad-hoc signed**. That doesn't matter on the machine that built it.
-Once a `.dmg` travels anywhere (download, AirDrop, USB stick), macOS quarantines it. On
-macOS 15+ the recipient then has to open **System Settings → Privacy & Security** and click
-**Open Anyway**.
+Releases are currently **ad-hoc signed**, not notarized. That's why a downloaded copy needs
+**Open Anyway** once in **System Settings → Privacy & Security**. A build made on your own
+machine doesn't need this; macOS only quarantines files that arrive from somewhere else.
 
 To ship a build that opens normally, sign it with a Developer ID and notarize it. Both are
 already wired into the script; both need a paid Apple Developer account:
