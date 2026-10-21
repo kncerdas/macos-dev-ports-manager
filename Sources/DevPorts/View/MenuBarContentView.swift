@@ -93,6 +93,10 @@ struct MenuBarContentView: View {
 
             Menu {
                 Toggle("Show hidden processes", isOn: $model.showSystem)
+                Toggle("Open at Login", isOn: Binding(
+                    get: { model.opensAtLogin },
+                    set: { model.setOpensAtLogin($0) }
+                ))
                 Divider()
                 Button("Open Data Folder") {
                     NSWorkspace.shared.open(Paths.supportDirectory)

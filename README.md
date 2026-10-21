@@ -46,6 +46,7 @@ in the terminal.
 | 🐳 **Docker aware** | Published container ports show the container, not Docker's shared forwarder, and stop and restart through `docker`. |
 | 🙈 **Hide the noise** | System daemons are hidden by default. Hide any other process from its `⋯` menu, and show or hide them all from the footer in one click. |
 | 🌐 **Open in browser** | One click to `http://localhost:<port>`, with an `http`/`https` choice per entry. |
+| 🚀 **Open at login** | One toggle in the settings menu, and DevPorts is in your menu bar every time you log in. |
 | 🪶 **Lightweight** | Native SwiftUI + AppKit, no third-party dependencies, no Dock icon. It lives in the menu bar. |
 
 ---
@@ -99,6 +100,8 @@ swift run DevPorts    # run straight from SwiftPM while hacking
 - **Star a running server** to save it. DevPorts fills in the start command for you; for Node
   projects it reads `package.json` and the lockfile (`pnpm run dev`, `npm run start`, …).
   Check it, save it, and the server can be started from the panel later.
+- **Open at login**: turn on **Open at Login** in the settings menu (the sliders icon). You
+  can also manage it in **System Settings → General → Login Items**.
 - **Hidden processes**: the footer shows how many are hidden (`· 4 hidden`). Click to show
   them, and click `· hide 4` to hide them again. The `⋯` menu can un-hide a single process.
 

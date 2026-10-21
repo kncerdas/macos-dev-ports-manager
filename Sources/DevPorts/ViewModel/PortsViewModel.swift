@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import ServiceManagement
 import SwiftUI
 
 @MainActor
@@ -27,6 +28,8 @@ final class PortsViewModel: ObservableObject {
     @Published private(set) var isRefreshing = false
     @Published private(set) var busyRows: Set<String> = []
     @Published private(set) var lastScanFailure: String?
+    /// Read from the system, not the store: the user can also flip it in Login Items.
+    @Published private(set) var opensAtLogin = SMAppService.mainApp.status == .enabled
 
     @Published var searchText = "" { didSet { rebuild() } }
     @Published var stopPrompt: StopPrompt?
@@ -56,6 +59,7 @@ final class PortsViewModel: ObservableObject {
     // MARK: - Lifecycle
 
     func panelAppeared() {
+        opensAtLogin = SMAppService.mainApp.status == .enabled
         refresh()
         timer?.invalidate()
         let interval = TimeInterval(max(2, store.data.settings.refreshSeconds))
@@ -550,6 +554,33 @@ final class PortsViewModel: ObservableObject {
     private func favorite(for row: PortRow) -> Favorite? {
         guard let favoriteID = row.favoriteID else { return nil }
         return store.data.favorites.first { $0.id == favoriteID }
+    }
+
+    // MARK: - Open at login
+
+    func setOpensAtLogin(_ enabled: Bool) {
+        // Registering would point the login item at the read-only disk image.
+        if enabled, SelfInstaller.isRunningFromDiskImage {
+            show(Banner(text: "Install DevPorts in Applications first, then turn on Open at Login.", kind: .error))
+            return
+        }
+
+        let service = SMAppService.mainApp
+        do {
+            if enabled {
+                try service.register()
+            } else {
+                try service.unregister()
+            }
+        } catch {
+            show(Banner(text: "Couldn't change Open at Login: \(error.localizedDescription)", kind: .error))
+        }
+
+        opensAtLogin = service.status == .enabled
+        if service.status == .requiresApproval {
+            show(Banner(text: "Allow DevPorts in System Settings → General → Login Items.", kind: .info))
+            SMAppService.openSystemSettingsLoginItems()
+        }
     }
 
     // MARK: - Hiding
